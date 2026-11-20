@@ -1,0 +1,6 @@
+{
+  "name": "Flow Salon — Pendaftaran Model Rambut",
+  "description": "Aplikasi pendaftaran kandidat model rambut Flow Salon dengan unggahan foto 4 sudut rambut (depan, belakang, kanan, kiri) yang tersimpan otomatis ke database pusat.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

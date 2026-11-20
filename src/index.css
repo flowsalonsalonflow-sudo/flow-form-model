@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Futura", "Futura PT", "Futura Std", "Jost", "Century Gothic", sans-serif;
+  --font-sans: "Futura", "Futura PT", "Futura Std", "Jost", "Century Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-emerald-deep: #062b1e;
+  --color-emerald-ink: #072218;
+  --color-emerald-muted: #2c4c3e;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-emerald-ink);
+    background-color: #163325;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    color: #072218;
+    background-color: #163325;
+    background-image:
+      linear-gradient(180deg, rgba(240, 253, 246, 0.14) 0%, rgba(209, 250, 229, 0.1) 50%, rgba(6, 46, 32, 0.22) 100%),
+      url('/assets/aistudio/7d3c612399b96bd9329a6fd7a7b8475f_c612d810.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, .font-editorial {
+    font-family: var(--font-display);
+  }
+}
+
+/* Feather-Light Clear Frosted Glassmorphism Surface System (Kaca Bening Frosted Ringan) */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.44);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 12px 32px -12px rgba(4, 34, 23, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.glass-surface-strong {
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 16px 40px -14px rgba(4, 34, 23, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.glass-bar {
+  background: rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 18px -6px rgba(4, 34, 23, 0.1);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #072218;
+  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(5, 150, 105, 0.4);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  outline: none;
+}
+
+.glass-emerald-cta {
+  background: linear-gradient(135deg, #059669 0%, #047857 58%, #065f46 100%);
+  border: 1px solid rgba(167, 243, 208, 0.45);
+  box-shadow:
+    0 12px 28px -8px rgba(4, 120, 87, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              filter 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-emerald-cta:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow:
+    0 16px 34px -8px rgba(4, 120, 87, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.glass-emerald-cta:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.glass-dark-sheet {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 20px 48px -12px rgba(4, 34, 23, 0.24);
+}
+
+/* Converts the uploaded white Flow logo to deep emerald on light frosted glass */
+.logo-emerald {
+  filter: brightness(0) saturate(100%) invert(16%) sepia(45%) saturate(1350%) hue-rotate(118deg) brightness(92%) contrast(98%);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
