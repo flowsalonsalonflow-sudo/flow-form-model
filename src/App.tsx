@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Lock } from 'lucide-react';
+import { AdminDashboardView } from './components/AdminDashboardView';
 import { ImageLightbox } from './components/ImageLightbox';
 import { PhotoGuideView } from './components/PhotoGuideView';
 import { RegistrationForm } from './components/RegistrationForm';
@@ -7,12 +9,36 @@ import { ToastBanner } from './components/ToastBanner';
 import type { ToastNotice } from './components/ToastBanner';
 import { TopBar } from './components/TopBar';
 import { FLOW_SALON_ASSETS } from './constants/assets';
-import type { AppView, CandidateRecord } from './types/candidate';
+import type {
+  AppView,
+  CandidateRecord,
+  CandidateStatus,
+  DatabaseSummary,
+} from './types/candidate';
 import { copyTextToClipboard } from './utils/imageUtils';
+
+const EMPTY_SUMMARY: DatabaseSummary = {
+  total: 0,
+  pending: 0,
+  shortlisted: 0,
+  scheduled: 0,
+  archived: 0,
+};
+
+const ADMIN_PIN_STORAGE_KEY = 'flow_salon_admin_pin';
 
 function resolveInitialView(): AppView {
   const params = new URLSearchParams(window.location.search);
   const viewParam = params.get('view');
+  const adminParam = params.get('admin');
+  if (
+    viewParam === 'admin' ||
+    adminParam === '1' ||
+    adminParam === 'true' ||
+    window.location.pathname.endsWith('/admin')
+  ) {
+    return 'admin';
+  }
   if (viewParam === 'guide') return 'guide';
   return 'form';
 }
@@ -20,6 +46,20 @@ function resolveInitialView(): AppView {
 export function App() {
   const [activeView, setActiveView] = useState<AppView>(resolveInitialView);
   const [submittedCandidate, setSubmittedCandidate] = useState<CandidateRecord | null>(null);
+
+  const [adminPin, setAdminPin] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem(ADMIN_PIN_STORAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
+  const [summary, setSummary] = useState<DatabaseSummary>(EMPTY_SUMMARY);
+  const [isLoadingDb, setIsLoadingDb] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const [linkCopied, setLinkCopied] = useState(false);
   const [toast, setToast] = useState<ToastNotice | null>(null);
@@ -32,6 +72,74 @@ export function App() {
       setToast((current) => (current?.id === id ? null : current));
     }, 6500);
   }, []);
+
+  const fetchCandidatesWithPin = useCallback(async (pin: string) => {
+    if (!pin) return false;
+    setIsLoadingDb(true);
+    setDbError(null);
+    try {
+      const response = await fetch('/api/candidates', {
+        headers: {
+          'x-admin-pin': pin,
+        },
+      });
+      if (response.status === 401) {
+        setIsAdminAuthenticated(false);
+        return false;
+      }
+      if (!response.ok) {
+        throw new Error('Gagal memuat data kandidat dari database pusat.');
+      }
+      const data = (await response.json()) as {
+        candidates: CandidateRecord[];
+        summary: DatabaseSummary;
+      };
+      setCandidates(data.candidates || []);
+      setSummary(data.summary || EMPTY_SUMMARY);
+      setIsAdminAuthenticated(true);
+      return true;
+    } catch (err) {
+      setDbError(
+        err instanceof Error
+          ? err.message
+          : 'Tidak dapat terhubung ke database pusat.',
+      );
+      return false;
+    } finally {
+      setIsLoadingDb(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeView === 'admin' && adminPin) {
+      void fetchCandidatesWithPin(adminPin);
+    }
+  }, [activeView, adminPin, fetchCandidatesWithPin]);
+
+  const handleAuthenticateAdmin = async (pin: string): Promise<boolean> => {
+    const ok = await fetchCandidatesWithPin(pin);
+    if (ok) {
+      setAdminPin(pin);
+      try {
+        sessionStorage.setItem(ADMIN_PIN_STORAGE_KEY, pin);
+      } catch {
+        // ignore storage restrictions
+      }
+    }
+    return ok;
+  };
+
+  const handleAdminLogout = () => {
+    setAdminPin('');
+    setIsAdminAuthenticated(false);
+    setCandidates([]);
+    try {
+      sessionStorage.removeItem(ADMIN_PIN_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setActiveView('form');
+  };
 
   const handleNavigate = (view: AppView) => {
     setActiveView(view);
@@ -66,18 +174,52 @@ export function App() {
     }
   };
 
+  const handleUpdateStatus = async (id: string, status: CandidateStatus) => {
+    const response = await fetch(`/api/candidates/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-pin': adminPin,
+      },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+      showToast('Gagal memperbarui status', 'Silakan coba beberapa saat lagi.');
+      return;
+    }
+    const data = (await response.json()) as {
+      candidate: CandidateRecord;
+      summary: DatabaseSummary;
+    };
+    setCandidates((prev) =>
+      prev.map((item) => (item.id === id ? data.candidate : item)),
+    );
+    setSummary(data.summary);
+    showToast('Status Kandidat Diperbarui', `Status ${data.candidate.fullName} telah disimpan.`);
+  };
+
+  const handleDeleteCandidate = async (id: string) => {
+    const response = await fetch(`/api/candidates/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        'x-admin-pin': adminPin,
+      },
+    });
+    if (!response.ok) {
+      showToast('Gagal menghapus data', 'Silakan coba beberapa saat lagi.');
+      return;
+    }
+    const data = (await response.json()) as {
+      deletedId: string;
+      summary: DatabaseSummary;
+    };
+    setCandidates((prev) => prev.filter((item) => item.id !== data.deletedId));
+    setSummary(data.summary);
+    showToast('Data Dihapus', 'Rekaman kandidat telah dihapus dari database pusat.');
+  };
+
   return (
     <div className="relative min-h-dvh flex flex-col overflow-x-clip">
-      {/* Subtle Ambient Emerald Glass Glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-      >
-        <div className="absolute -top-28 -left-24 w-[420px] h-[420px] rounded-full bg-emerald-500/15 blur-3xl" />
-        <div className="absolute top-[28%] -right-28 w-[380px] h-[380px] rounded-full bg-teal-400/12 blur-3xl" />
-        <div className="absolute -bottom-32 left-1/3 w-[460px] h-[360px] rounded-full bg-emerald-500/12 blur-3xl" />
-      </div>
-
       <TopBar
         activeView={activeView}
         onNavigate={handleNavigate}
@@ -109,10 +251,27 @@ export function App() {
             onInspectImage={(src, caption) => setLightbox({ src, caption })}
           />
         )}
+
+        {activeView === 'admin' && (
+          <AdminDashboardView
+            candidates={candidates}
+            summary={summary}
+            isLoading={isLoadingDb}
+            error={dbError}
+            isAuthenticated={isAdminAuthenticated}
+            onAuthenticate={handleAuthenticateAdmin}
+            onLogout={handleAdminLogout}
+            onRefresh={() => void fetchCandidatesWithPin(adminPin)}
+            onUpdateStatus={handleUpdateStatus}
+            onDeleteCandidate={handleDeleteCandidate}
+            onOpenForm={handleRegisterAnother}
+            onInspectImage={(src, caption) => setLightbox({ src, caption })}
+          />
+        )}
       </main>
 
-      <footer className="mt-auto border-t border-white/75 bg-white/60 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#2c4c3e]">
+      <footer className="mt-auto border-t border-white/75 bg-white/55 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#244235]">
           <div className="flex items-center gap-2.5">
             <img
               src={FLOW_SALON_ASSETS.brandLogo}
@@ -137,6 +296,15 @@ export function App() {
               className="hover:text-[#062b1e] transition-colors cursor-pointer"
             >
               Panduan Foto
+            </button>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => handleNavigate('admin')}
+              className="inline-flex items-center gap-1 text-[#244235]/80 hover:text-[#062b1e] transition-colors cursor-pointer"
+            >
+              <Lock className="w-3 h-3" aria-hidden="true" />
+              <span>Admin</span>
             </button>
           </div>
         </div>

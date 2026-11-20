@@ -210,7 +210,28 @@ async function startServer(): Promise<void> {
     fs.createReadStream(filePath).pipe(res);
   });
 
+  const getAdminPin = () => (process.env.ADMIN_PIN || 'flowsalon').trim();
+
+  const isAuthorizedAdmin = (req: Request): boolean => {
+    const pinHeader = (req.headers['x-admin-pin'] as string | undefined)?.trim();
+    return Boolean(pinHeader && pinHeader === getAdminPin());
+  };
+
+  app.post('/api/admin/login', (req: Request, res: Response) => {
+    const body = req.body as { pin?: unknown };
+    const provided = typeof body.pin === 'string' ? body.pin.trim() : '';
+    if (provided && provided === getAdminPin()) {
+      res.json({ ok: true });
+      return;
+    }
+    res.status(401).json({ error: 'PIN Admin tidak sesuai.' });
+  });
+
   app.get('/api/candidates', (req: Request, res: Response) => {
+    if (!isAuthorizedAdmin(req)) {
+      res.status(401).json({ error: 'Akses ditolak. Khusus Admin Flow Salon.' });
+      return;
+    }
     const allRecords = readCandidates().sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );

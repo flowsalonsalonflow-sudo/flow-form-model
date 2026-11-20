@@ -49,4 +49,4 @@ export interface CreateCandidatePayload {
   photos: CandidatePhotos;
 }
 
-export type AppView = 'form' | 'guide';
+export type AppView = 'form' | 'guide' | 'admin';
