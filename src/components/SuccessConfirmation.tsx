@@ -11,6 +11,7 @@ import {
   HAIR_ANGLES,
   HAIR_QUIZ_QUESTIONS,
 } from '../constants/assets';
+import { resolveAssetUrl } from '../types/candidate';
 import type { CandidateRecord } from '../types/candidate';
 import {
   copyTextToClipboard,
@@ -60,7 +61,7 @@ export function SuccessConfirmation({
             </div>
 
             <img
-              src={FLOW_SALON_ASSETS.brandLogo}
+              src={resolveAssetUrl(FLOW_SALON_ASSETS.brandLogo)}
               alt="Flow Salon"
               referrerPolicy="no-referrer"
               className="h-6 sm:h-7 w-auto object-contain shrink-0"

@@ -1,5 +1,6 @@
 import { ArrowLeft, CheckCircle2, Eye } from 'lucide-react';
 import { FLOW_SALON_ASSETS, HAIR_ANGLES, PHOTO_CHECKLIST } from '../constants/assets';
+import { resolveAssetUrl } from '../types/candidate';
 import { ResilientImage } from './ResilientImage';
 
 interface PhotoGuideViewProps {
@@ -17,7 +18,7 @@ export function PhotoGuideView({
       <div className="glass-surface-strong rounded-[28px] p-5 sm:p-8 flex flex-col md:flex-row md:items-end justify-between gap-5">
         <div className="max-w-2xl">
           <img
-            src={FLOW_SALON_ASSETS.brandLogo}
+            src={resolveAssetUrl(FLOW_SALON_ASSETS.brandLogo)}
             alt="Flow Salon"
             referrerPolicy="no-referrer"
             className="h-6 w-auto object-contain mb-2.5 logo-emerald"

@@ -483,13 +483,18 @@ async function startServer(): Promise<void> {
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     app.use(express.static(distDir));
+    app.use('/form-model', express.static(distDir));
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(distDir, 'index.html'));
     });
   }
 
+  const rootApp = express();
+  rootApp.use('/form-model', app);
+  rootApp.use('/', app);
+
   const port = Number(process.env.PORT) || 3000;
-  app.listen(port, '0.0.0.0', () => {
+  rootApp.listen(port, '0.0.0.0', () => {
     console.log(`Flow Salon server running on http://0.0.0.0:${port}`);
   });
 }

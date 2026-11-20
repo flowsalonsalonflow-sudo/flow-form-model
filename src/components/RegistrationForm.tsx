@@ -19,6 +19,7 @@ import type {
   HairQuizAnswers,
   PhotoAngle,
 } from '../types/candidate';
+import { resolveAssetUrl } from '../types/candidate';
 import {
   formatWhatsappInput,
   isValidIndonesianWhatsapp,
@@ -133,7 +134,7 @@ export function RegistrationForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/candidates', {
+      const response = await fetch(resolveAssetUrl('/api/candidates'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -28,6 +28,7 @@ import type {
   CandidateStatus,
   DatabaseSummary,
 } from '../types/candidate';
+import { resolveAssetUrl } from '../types/candidate';
 import {
   buildWhatsappLink,
   formatIndonesianDateTime,
@@ -138,7 +139,7 @@ export function AdminDashboardView({
               <Lock className="w-5 h-5" aria-hidden="true" />
             </div>
             <img
-              src={FLOW_SALON_ASSETS.brandLogo}
+              src={resolveAssetUrl(FLOW_SALON_ASSETS.brandLogo)}
               alt="Flow Salon"
               referrerPolicy="no-referrer"
               className="h-6 w-auto object-contain logo-emerald"

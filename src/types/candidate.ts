@@ -50,3 +50,15 @@ export interface CreateCandidatePayload {
 }
 
 export type AppView = 'form' | 'guide' | 'admin';
+
+export function resolveAssetUrl(path: string): string {
+  if (!path || path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const clean = path.startsWith('/') ? path.slice(1) : path;
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  if (pathname.startsWith('/form-model')) {
+    return `/form-model/${clean}`;
+  }
+  return `/${clean}`;
+}

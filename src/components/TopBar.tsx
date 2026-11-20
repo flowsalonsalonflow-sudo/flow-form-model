@@ -1,5 +1,6 @@
 import { Check, Link2 } from 'lucide-react';
 import { FLOW_SALON_ASSETS } from '../constants/assets';
+import { resolveAssetUrl } from '../types/candidate';
 import type { AppView } from '../types/candidate';
 
 interface TopBarProps {
@@ -31,7 +32,7 @@ export function TopBar({
           className="shrink-0 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-lg cursor-pointer"
         >
           <img
-            src={FLOW_SALON_ASSETS.brandLogo}
+            src={resolveAssetUrl(FLOW_SALON_ASSETS.brandLogo)}
             alt="Flow Salon"
             referrerPolicy="no-referrer"
             className="h-6 sm:h-7 w-auto object-contain select-none logo-emerald"

@@ -9,6 +9,7 @@ import { ToastBanner } from './components/ToastBanner';
 import type { ToastNotice } from './components/ToastBanner';
 import { TopBar } from './components/TopBar';
 import { FLOW_SALON_ASSETS } from './constants/assets';
+import { resolveAssetUrl } from './types/candidate';
 import type {
   AppView,
   CandidateRecord,
@@ -78,7 +79,7 @@ export function App() {
     setIsLoadingDb(true);
     setDbError(null);
     try {
-      const response = await fetch('/api/candidates', {
+      const response = await fetch(resolveAssetUrl('/api/candidates'), {
         headers: {
           'x-admin-pin': pin,
         },
@@ -175,7 +176,7 @@ export function App() {
   };
 
   const handleUpdateStatus = async (id: string, status: CandidateStatus) => {
-    const response = await fetch(`/api/candidates/${encodeURIComponent(id)}`, {
+    const response = await fetch(resolveAssetUrl(`/api/candidates/${encodeURIComponent(id)}`), {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -199,7 +200,7 @@ export function App() {
   };
 
   const handleDeleteCandidate = async (id: string) => {
-    const response = await fetch(`/api/candidates/${encodeURIComponent(id)}`, {
+    const response = await fetch(resolveAssetUrl(`/api/candidates/${encodeURIComponent(id)}`), {
       method: 'DELETE',
       headers: {
         'x-admin-pin': adminPin,
@@ -274,7 +275,7 @@ export function App() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#244235]">
           <div className="flex items-center gap-2.5">
             <img
-              src={FLOW_SALON_ASSETS.brandLogo}
+              src={resolveAssetUrl(FLOW_SALON_ASSETS.brandLogo)}
               alt="Flow Salon"
               referrerPolicy="no-referrer"
               className="h-4 w-auto object-contain logo-emerald"
