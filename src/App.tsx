@@ -221,6 +221,26 @@ export function App() {
 
   return (
     <div className="relative min-h-dvh flex flex-col overflow-x-clip">
+      {/* Fixed Full-Viewport Leaf Background (Never scrolls on iOS Safari, Android Chrome, or Desktop) */}
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 -z-20 pointer-events-none overflow-hidden bg-[#163325]"
+      >
+        <img
+          src={resolveAssetUrl(FLOW_SALON_ASSETS.leafBackground)}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover object-center select-none"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(240, 253, 246, 0.14) 0%, rgba(209, 250, 229, 0.1) 50%, rgba(6, 46, 32, 0.22) 100%)',
+          }}
+        />
+      </div>
+
       <TopBar
         activeView={activeView}
         onNavigate={handleNavigate}

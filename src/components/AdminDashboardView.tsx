@@ -270,6 +270,28 @@ export function AdminDashboardView({
   const selectedCandidate =
     candidates.find((item) => item.id === selectedCandidateId) || null;
 
+  const getCandidateQuizAnswer = (
+    item: CandidateRecord,
+    key: keyof HairQuizAnswers,
+  ): string => {
+    if (item.hairQuiz && item.hairQuiz[key]) {
+      return item.hairQuiz[key];
+    }
+    if (!item.hairNote) return '';
+    const prefixMap: Record<keyof HairQuizAnswers, string> = {
+      coloredLast4Years: 'Diwarnai (4 thn):',
+      smoothedLast4Years: 'Smoothing (4 thn):',
+      antiDandruffShampoo: 'Shampoo Anti-Ketombe:',
+      blackShampoo: 'Shampoo Hitam:',
+      keratinLast4Years: 'Keratin (4 thn):',
+    };
+    const prefix = prefixMap[key];
+    const parts = item.hairNote.split('·').map((s) => s.trim());
+    const matched = parts.find((p) => p.startsWith(prefix));
+    if (!matched) return '';
+    return matched.slice(prefix.length).trim();
+  };
+
   const filteredCandidates = candidates.filter((item) => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const q = searchQuery.trim().toLowerCase();
@@ -285,7 +307,7 @@ export function AdminDashboardView({
       if (!targetAnswer || targetAnswer === 'all') {
         return true;
       }
-      const candidateAnswer = item.hairQuiz?.[question.key];
+      const candidateAnswer = getCandidateQuizAnswer(item, question.key);
       return candidateAnswer === targetAnswer;
     });
 

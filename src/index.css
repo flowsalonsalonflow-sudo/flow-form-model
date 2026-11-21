@@ -23,14 +23,6 @@
     font-family: var(--font-sans);
     color: #072218;
     background-color: #163325;
-    background-image:
-      linear-gradient(180deg, rgba(240, 253, 246, 0.14) 0%, rgba(209, 250, 229, 0.1) 50%, rgba(6, 46, 32, 0.22) 100%),
-      url('/form-model/assets/aistudio/7d3c612399b96bd9329a6fd7a7b8475f_c612d810.jpg'),
-      url('/assets/aistudio/7d3c612399b96bd9329a6fd7a7b8475f_c612d810.jpg');
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
   }
 
   h1, h2, h3, .font-editorial {
