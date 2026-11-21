@@ -12,7 +12,9 @@ import {
   LogOut,
   MessageCircle,
   RefreshCw,
+  RotateCcw,
   Search,
+  SlidersHorizontal,
   Trash2,
   UserPlus,
   X,
@@ -27,6 +29,7 @@ import type {
   CandidateRecord,
   CandidateStatus,
   DatabaseSummary,
+  HairQuizAnswers,
 } from '../types/candidate';
 import { resolveAssetUrl } from '../types/candidate';
 import {
@@ -50,8 +53,26 @@ interface AdminDashboardViewProps {
   onInspectImage: (src: string, caption: string) => void;
 }
 
+type QuizFilterState = Record<keyof HairQuizAnswers, string>;
+
+const INITIAL_QUIZ_FILTERS: QuizFilterState = {
+  coloredLast4Years: 'all',
+  smoothedLast4Years: 'all',
+  antiDandruffShampoo: 'all',
+  blackShampoo: 'all',
+  keratinLast4Years: 'all',
+};
+
+const QUIZ_SHORT_LABELS: Record<keyof HairQuizAnswers, string> = {
+  coloredLast4Years: '1. Diwarnai (4 thn)',
+  smoothedLast4Years: '2. Smoothing (4 thn)',
+  antiDandruffShampoo: '3. Shampoo Anti-Ketombe',
+  blackShampoo: '4. Shampoo Hitam',
+  keratinLast4Years: '5. Treatment Keratin (4 thn)',
+};
+
 const FILTER_OPTIONS: Array<{ id: 'all' | CandidateStatus; label: string }> = [
-  { id: 'all', label: 'Semua' },
+  { id: 'all', label: 'Semua Status' },
   { id: 'pending', label: 'Menunggu Review' },
   { id: 'shortlisted', label: 'Lolos Kurasi' },
   { id: 'scheduled', label: 'Dijadwalkan' },
@@ -103,6 +124,9 @@ export function AdminDashboardView({
 
   const [statusFilter, setStatusFilter] = useState<'all' | CandidateStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [quizFilters, setQuizFilters] = useState<QuizFilterState>(INITIAL_QUIZ_FILTERS);
+  const [showQuizFilterPanel, setShowQuizFilterPanel] = useState(true);
+
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -215,6 +239,34 @@ export function AdminDashboardView({
     );
   }
 
+  const activeQuizFilterCount = HAIR_QUIZ_QUESTIONS.filter(
+    (q) => quizFilters[q.key] !== 'all',
+  ).length;
+
+  const handleSetQuizFilter = (key: keyof HairQuizAnswers, value: string) => {
+    setQuizFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleResetAllFilters = () => {
+    setQuizFilters(INITIAL_QUIZ_FILTERS);
+    setStatusFilter('all');
+    setSearchQuery('');
+  };
+
+  // Preset helper: Ideal Virgin/Healthy Hair (All "Tidak Pernah" / "Tidak")
+  const handleApplyVirginHairPreset = () => {
+    setQuizFilters({
+      coloredLast4Years: 'Tidak Pernah',
+      smoothedLast4Years: 'Tidak Pernah',
+      antiDandruffShampoo: 'Tidak',
+      blackShampoo: 'Tidak',
+      keratinLast4Years: 'Tidak Pernah',
+    });
+  };
+
   const selectedCandidate =
     candidates.find((item) => item.id === selectedCandidateId) || null;
 
@@ -227,7 +279,17 @@ export function AdminDashboardView({
       item.whatsappDisplay.toLowerCase().includes(q) ||
       item.whatsappNormalized.includes(q) ||
       item.registrationCode.toLowerCase().includes(q);
-    return matchesStatus && matchesQuery;
+
+    const matchesQuiz = HAIR_QUIZ_QUESTIONS.every((question) => {
+      const targetAnswer = quizFilters[question.key];
+      if (!targetAnswer || targetAnswer === 'all') {
+        return true;
+      }
+      const candidateAnswer = item.hairQuiz?.[question.key];
+      return candidateAnswer === targetAnswer;
+    });
+
+    return matchesStatus && matchesQuery && matchesQuiz;
   });
 
   const handleStatusChange = async (id: string, nextStatus: CandidateStatus) => {
@@ -253,7 +315,7 @@ export function AdminDashboardView({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-5 sm:py-10 space-y-6">
+    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-5 sm:py-10 space-y-5">
       {/* Header & Summary Metrics */}
       <section className="glass-surface-strong rounded-[28px] p-5 sm:p-8 space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -328,7 +390,7 @@ export function AdminDashboardView({
         </div>
       </section>
 
-      {/* Filter & Search Toolbar */}
+      {/* Status & Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div
           role="tablist"
@@ -356,21 +418,136 @@ export function AdminDashboardView({
           })}
         </div>
 
-        <div className="relative w-full md:w-80">
-          <Search
-            className="w-4 h-4 text-[#4e6b5e] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nama, WhatsApp, atau kode..."
-            aria-label="Cari kandidat"
-            className="w-full min-h-[46px] pl-10 pr-4 rounded-2xl text-sm text-[#072218] placeholder:text-[#4e6b5e] glass-input"
-          />
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-72">
+            <Search
+              className="w-4 h-4 text-[#4e6b5e] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari nama, WhatsApp, kode..."
+              aria-label="Cari kandidat"
+              className="w-full min-h-[44px] pl-10 pr-4 rounded-2xl text-sm text-[#072218] placeholder:text-[#4e6b5e] glass-input"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowQuizFilterPanel((prev) => !prev)}
+            aria-expanded={showQuizFilterPanel}
+            className={`min-h-[44px] px-3.5 rounded-2xl text-xs sm:text-sm font-semibold inline-flex items-center gap-2 shrink-0 transition-colors cursor-pointer ${
+              activeQuizFilterCount > 0
+                ? 'bg-emerald-700 text-white shadow-sm'
+                : 'bg-white/60 hover:bg-white/80 text-[#062b1e] border border-white/80'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+            <span>
+              Filter Jawaban{activeQuizFilterCount > 0 ? ` (${activeQuizFilterCount})` : ''}
+            </span>
+          </button>
         </div>
       </div>
+
+      {/* Interactive 5-Question Answer Filter Panel */}
+      {showQuizFilterPanel && (
+        <section className="glass-surface rounded-[24px] p-4 sm:p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/60">
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-[#062b1e]">
+                Penyaringan Berdasarkan Jawaban Kondisi Rambut
+              </h2>
+              <p className="text-xs text-[#244235] mt-0.5">
+                Kombinasikan jawaban Pertanyaan 1–5 untuk menyaring kandidat sesuai kriteria yang Anda cari.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleApplyVirginHairPreset}
+                className="min-h-[36px] px-3 rounded-xl bg-emerald-800/12 hover:bg-emerald-800/20 border border-emerald-800/20 text-xs font-semibold text-emerald-950 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                Filter Rambut Virgin (Semua Tidak)
+              </button>
+
+              {activeQuizFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setQuizFilters(INITIAL_QUIZ_FILTERS)}
+                  className="min-h-[36px] px-3 rounded-xl bg-white/70 hover:bg-white border border-white/85 text-xs font-semibold text-[#062b1e] inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Reset Filter Jawaban</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="divide-y divide-white/55">
+            {HAIR_QUIZ_QUESTIONS.map((item, idx) => {
+              const selectedVal = quizFilters[item.key];
+              const filterChoices = ['all', item.options[0], item.options[1]];
+
+              return (
+                <div
+                  key={item.key}
+                  className="py-3 first:pt-1 last:pb-1 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5"
+                >
+                  <div className="flex items-start gap-2 pr-2">
+                    <span className="text-xs sm:text-sm font-semibold text-[#072218] tabular-nums shrink-0 w-4">
+                      {idx + 1}.
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium text-[#072218] leading-snug">
+                      {item.question}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5 pl-6 lg:pl-0 lg:w-[340px] shrink-0">
+                    {filterChoices.map((choice) => {
+                      const isActive = selectedVal === choice;
+                      const label = choice === 'all' ? 'Semua' : choice;
+                      return (
+                        <button
+                          key={choice}
+                          type="button"
+                          onClick={() => handleSetQuizFilter(item.key, choice)}
+                          className={`min-h-[38px] px-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                            isActive
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-white/55 hover:bg-white/80 text-[#1b3a2d] border border-white/75'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Match count bar */}
+          <div className="pt-3 border-t border-white/60 flex flex-wrap items-center justify-between gap-2 text-xs text-[#244235]">
+            <span className="font-semibold tabular-nums">
+              Menampilkan {filteredCandidates.length} dari {candidates.length} kandidat
+            </span>
+            {(activeQuizFilterCount > 0 || statusFilter !== 'all' || searchQuery.trim() !== '') && (
+              <button
+                type="button"
+                onClick={handleResetAllFilters}
+                className="font-semibold text-emerald-900 hover:underline cursor-pointer"
+              >
+                Tampilkan Semua Kandidat
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {error && (
         <div
@@ -387,13 +564,23 @@ export function AdminDashboardView({
           <span className="text-sm font-semibold">Memuat data kandidat...</span>
         </div>
       ) : filteredCandidates.length === 0 ? (
-        <div className="glass-surface rounded-3xl p-10 text-center space-y-2">
+        <div className="glass-surface rounded-3xl p-10 text-center space-y-3">
           <p className="text-base font-semibold text-[#062b1e]">
-            Belum ada kandidat yang sesuai filter
+            Tidak ada kandidat dengan kombinasi jawaban tersebut
           </p>
           <p className="text-xs sm:text-sm text-[#244235] max-w-md mx-auto">
-            Coba ubah kata kunci pencarian atau bagikan tautan pendaftaran ke kandidat model baru.
+            Coba ubah salah satu filter jawaban di atas atau tekan tombol di bawah untuk mereset penyaringan.
           </p>
+          {(activeQuizFilterCount > 0 || statusFilter !== 'all' || searchQuery.trim() !== '') && (
+            <button
+              type="button"
+              onClick={handleResetAllFilters}
+              className="min-h-[42px] px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Reset Semua Filter</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -451,10 +638,30 @@ export function AdminDashboardView({
                   Masuk {formatIndonesianDateTime(candidate.createdAt)}
                 </p>
 
-                {candidate.hairNote && (
-                  <p className="text-xs text-[#072218] pt-1 line-clamp-2 leading-relaxed">
-                    {candidate.hairNote}
-                  </p>
+                {/* Structured 5 Quiz Answers Summary on Card */}
+                {candidate.hairQuiz ? (
+                  <div className="pt-2 mt-1 border-t border-white/50 space-y-1 text-xs">
+                    {HAIR_QUIZ_QUESTIONS.map((q) => {
+                      const ans = candidate.hairQuiz?.[q.key] || '-';
+                      return (
+                        <div
+                          key={q.key}
+                          className="flex items-center justify-between gap-2 text-[#244235]"
+                        >
+                          <span className="truncate">{QUIZ_SHORT_LABELS[q.key]}</span>
+                          <span className="font-semibold text-[#062b1e] shrink-0">
+                            {ans}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  candidate.hairNote && (
+                    <p className="text-xs text-[#072218] pt-1 line-clamp-2 leading-relaxed">
+                      {candidate.hairNote}
+                    </p>
+                  )
                 )}
               </div>
 

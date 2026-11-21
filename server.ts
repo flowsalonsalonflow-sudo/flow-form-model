@@ -55,7 +55,15 @@ const SEED_CANDIDATES: CandidateRecord[] = [
     fullName: 'Nadia Pramesti',
     whatsappDisplay: '0812-8940-3321',
     whatsappNormalized: '6281289403321',
-    hairNote: 'Rambut alami belum pernah bleaching, panjang melewati bahu.',
+    hairNote:
+      'Diwarnai (4 thn): Tidak Pernah · Smoothing (4 thn): Tidak Pernah · Shampoo Anti-Ketombe: Tidak · Shampoo Hitam: Tidak · Keratin (4 thn): Tidak Pernah',
+    hairQuiz: {
+      coloredLast4Years: 'Tidak Pernah',
+      smoothedLast4Years: 'Tidak Pernah',
+      antiDandruffShampoo: 'Tidak',
+      blackShampoo: 'Tidak',
+      keratinLast4Years: 'Tidak Pernah',
+    },
     photos: {
       front: '/src/assets/images/guide_hair_front_1795131928826.jpg',
       back: '/src/assets/images/guide_hair_back_1795131928278.jpg',
@@ -72,7 +80,15 @@ const SEED_CANDIDATES: CandidateRecord[] = [
     fullName: 'Clara Wijaya',
     whatsappDisplay: '0857-2104-7782',
     whatsappNormalized: '6285721047782',
-    hairNote: 'Bergelombang natural, potong terakhir 4 bulan lalu.',
+    hairNote:
+      'Diwarnai (4 thn): Pernah · Smoothing (4 thn): Tidak Pernah · Shampoo Anti-Ketombe: Ya · Shampoo Hitam: Tidak · Keratin (4 thn): Pernah',
+    hairQuiz: {
+      coloredLast4Years: 'Pernah',
+      smoothedLast4Years: 'Tidak Pernah',
+      antiDandruffShampoo: 'Ya',
+      blackShampoo: 'Tidak',
+      keratinLast4Years: 'Pernah',
+    },
     photos: {
       front: '/src/assets/images/flow_salon_hero_1795131929106.jpg',
       back: '/src/assets/images/guide_hair_back_1795131928278.jpg',
