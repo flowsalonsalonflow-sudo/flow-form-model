@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import {
   Award,
   CalendarCheck,
+  Check,
   Clock,
   ExternalLink,
   FolderArchive,
@@ -11,6 +12,7 @@ import {
   Lock,
   LogOut,
   MessageCircle,
+  Pencil,
   RefreshCw,
   RotateCcw,
   Search,
@@ -48,6 +50,10 @@ interface AdminDashboardViewProps {
   onLogout: () => void;
   onRefresh: () => void;
   onUpdateStatus: (id: string, status: CandidateStatus) => Promise<void>;
+  onUpdateDetails: (
+    id: string,
+    payload: { fullName: string; whatsapp: string; hairQuiz: HairQuizAnswers },
+  ) => Promise<void>;
   onDeleteCandidate: (id: string) => Promise<void>;
   onOpenForm: () => void;
   onInspectImage: (src: string, caption: string) => void;
@@ -114,6 +120,7 @@ export function AdminDashboardView({
   onLogout,
   onRefresh,
   onUpdateStatus,
+  onUpdateDetails,
   onDeleteCandidate,
   onOpenForm,
   onInspectImage,
@@ -130,6 +137,17 @@ export function AdminDashboardView({
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const [isEditingCandidate, setIsEditingCandidate] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editWhatsapp, setEditWhatsapp] = useState('');
+  const [editHairQuiz, setEditHairQuiz] = useState<HairQuizAnswers>({
+    coloredLast4Years: 'Tidak Pernah',
+    smoothedLast4Years: 'Tidak Pernah',
+    antiDandruffShampoo: 'Tidak',
+    blackShampoo: 'Tidak',
+    keratinLast4Years: 'Tidak Pernah',
+  });
 
   const handlePinSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -724,6 +742,7 @@ export function AdminDashboardView({
           onClick={() => {
             setSelectedCandidateId(null);
             setConfirmDeleteId(null);
+            setIsEditingCandidate(false);
           }}
         >
           <div
@@ -751,17 +770,55 @@ export function AdminDashboardView({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCandidateId(null);
-                  setConfirmDeleteId(null);
-                }}
-                aria-label="Tutup detail kandidat"
-                className="min-h-[44px] min-w-[44px] -mr-2 rounded-xl hover:bg-emerald-950/10 text-[#062b1e] flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
+              <div className="flex items-center gap-2">
+                {!isEditingCandidate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditFullName(selectedCandidate.fullName);
+                      setEditWhatsapp(
+                        selectedCandidate.whatsappDisplay.startsWith('Belum')
+                          ? ''
+                          : selectedCandidate.whatsappDisplay,
+                      );
+                      setEditHairQuiz({
+                        coloredLast4Years:
+                          getCandidateQuizAnswer(selectedCandidate, 'coloredLast4Years') ||
+                          'Tidak Pernah',
+                        smoothedLast4Years:
+                          getCandidateQuizAnswer(selectedCandidate, 'smoothedLast4Years') ||
+                          'Tidak Pernah',
+                        antiDandruffShampoo:
+                          getCandidateQuizAnswer(selectedCandidate, 'antiDandruffShampoo') ||
+                          'Tidak',
+                        blackShampoo:
+                          getCandidateQuizAnswer(selectedCandidate, 'blackShampoo') || 'Tidak',
+                        keratinLast4Years:
+                          getCandidateQuizAnswer(selectedCandidate, 'keratinLast4Years') ||
+                          'Tidak Pernah',
+                      });
+                      setIsEditingCandidate(true);
+                    }}
+                    className="min-h-[40px] px-3 rounded-xl bg-white/75 hover:bg-white border border-emerald-950/15 text-xs font-semibold text-[#062b1e] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
+                    <span>Edit Data</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCandidateId(null);
+                    setConfirmDeleteId(null);
+                    setIsEditingCandidate(false);
+                  }}
+                  aria-label="Tutup detail kandidat"
+                  className="min-h-[44px] min-w-[44px] -mr-2 rounded-xl hover:bg-emerald-950/10 text-[#062b1e] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
             </div>
 
             <div className="p-5 sm:p-7 overflow-y-auto space-y-5">
@@ -797,7 +854,117 @@ export function AdminDashboardView({
                 </div>
               </div>
 
-              {selectedCandidate.hairQuiz ? (
+              {isEditingCandidate ? (
+                <div className="rounded-2xl bg-white/80 border border-white/95 p-4 sm:p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold text-[#062b1e]">
+                      Edit Nama, WhatsApp &amp; Jawaban Kandidat
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCandidate(false)}
+                      className="text-xs font-semibold text-[#244235] hover:text-[#062b1e] cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#072218] mb-1">
+                        Nama Lengkap
+                      </label>
+                      <input
+                        type="text"
+                        value={editFullName}
+                        onChange={(e) => setEditFullName(e.target.value)}
+                        className="w-full min-h-[42px] px-3.5 rounded-xl text-xs sm:text-sm text-[#072218] glass-input"
+                        placeholder="Nama lengkap kandidat"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#072218] mb-1">
+                        Nomor WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        value={editWhatsapp}
+                        onChange={(e) => setEditWhatsapp(e.target.value)}
+                        className="w-full min-h-[42px] px-3.5 rounded-xl text-xs sm:text-sm text-[#072218] glass-input"
+                        placeholder="Contoh: 081234567890"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 pt-2 border-t border-emerald-950/10">
+                    {HAIR_QUIZ_QUESTIONS.map((item, idx) => (
+                      <div
+                        key={item.key}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                      >
+                        <span className="font-medium text-[#072218]">
+                          {idx + 1}. {item.question}
+                        </span>
+                        <div className="grid grid-cols-2 gap-1.5 sm:w-56 shrink-0">
+                          {item.options.map((opt) => {
+                            const active = editHairQuiz[item.key] === opt;
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() =>
+                                  setEditHairQuiz((prev) => ({
+                                    ...prev,
+                                    [item.key]: opt,
+                                  }))
+                                }
+                                className={`min-h-[34px] px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                  active
+                                    ? 'bg-emerald-700 text-white'
+                                    : 'bg-white/75 text-[#1b3a2d] border border-emerald-950/15'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCandidate(false)}
+                      className="min-h-[40px] px-4 rounded-xl bg-white/80 text-xs font-semibold text-[#244235] cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      disabled={updatingId === selectedCandidate.id}
+                      onClick={async () => {
+                        setUpdatingId(selectedCandidate.id);
+                        try {
+                          await onUpdateDetails(selectedCandidate.id, {
+                            fullName: editFullName,
+                            whatsapp: editWhatsapp,
+                            hairQuiz: editHairQuiz,
+                          });
+                          setIsEditingCandidate(false);
+                        } finally {
+                          setUpdatingId(null);
+                        }
+                      }}
+                      className="min-h-[40px] px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Simpan Perubahan</span>
+                    </button>
+                  </div>
+                </div>
+              ) : selectedCandidate.hairQuiz ? (
                 <div className="rounded-2xl bg-white/70 border border-white/90 p-4 space-y-2">
                   <span className="block text-xs font-semibold text-emerald-900">
                     Jawaban Riwayat Kondisi Rambut

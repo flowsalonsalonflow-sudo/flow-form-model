@@ -15,6 +15,7 @@ import type {
   CandidateRecord,
   CandidateStatus,
   DatabaseSummary,
+  HairQuizAnswers,
 } from './types/candidate';
 import { copyTextToClipboard } from './utils/imageUtils';
 
@@ -199,6 +200,33 @@ export function App() {
     showToast('Status Kandidat Diperbarui', `Status ${data.candidate.fullName} telah disimpan.`);
   };
 
+  const handleUpdateCandidateDetails = async (
+    id: string,
+    payload: { fullName: string; whatsapp: string; hairQuiz: HairQuizAnswers },
+  ) => {
+    const response = await fetch(resolveAssetUrl(`/api/candidates/${encodeURIComponent(id)}`), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-pin': adminPin,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      showToast('Gagal menyimpan perubahan', 'Silakan coba beberapa saat lagi.');
+      return;
+    }
+    const data = (await response.json()) as {
+      candidate: CandidateRecord;
+      summary: DatabaseSummary;
+    };
+    setCandidates((prev) =>
+      prev.map((item) => (item.id === id ? data.candidate : item)),
+    );
+    setSummary(data.summary);
+    showToast('Data Kandidat Disimpan', `Perubahan data ${data.candidate.fullName} telah tersimpan.`);
+  };
+
   const handleDeleteCandidate = async (id: string) => {
     const response = await fetch(resolveAssetUrl(`/api/candidates/${encodeURIComponent(id)}`), {
       method: 'DELETE',
@@ -284,6 +312,7 @@ export function App() {
             onLogout={handleAdminLogout}
             onRefresh={() => void fetchCandidatesWithPin(adminPin)}
             onUpdateStatus={handleUpdateStatus}
+            onUpdateDetails={handleUpdateCandidateDetails}
             onDeleteCandidate={handleDeleteCandidate}
             onOpenForm={handleRegisterAnother}
             onInspectImage={(src, caption) => setLightbox({ src, caption })}
