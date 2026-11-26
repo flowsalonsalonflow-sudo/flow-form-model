@@ -196,8 +196,8 @@ export function PhotoUploadCard({
       </div>
 
       {hasError && !value && (
-        <p className="mt-1.5 text-[11px] font-semibold text-red-700" role="alert">
-          Wajib diisi
+        <p className="mt-1.5 text-[11px] font-semibold text-red-700 leading-tight" role="alert">
+          Foto {angle.shortLabel} wajib diunggah
         </p>
       )}
     </div>

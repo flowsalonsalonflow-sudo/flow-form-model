@@ -77,12 +77,33 @@ export function RegistrationForm({
   const trimmedName = fullName.trim();
   const isNameValid = trimmedName.length >= 2;
   const isWhatsappValid = isValidIndonesianWhatsapp(whatsapp);
-  const isQuizComplete = HAIR_QUIZ_QUESTIONS.every((q) => Boolean(hairQuiz[q.key]));
+  const unansweredQuestionNumbers = HAIR_QUIZ_QUESTIONS.map((q, idx) =>
+    hairQuiz[q.key] ? null : idx + 1,
+  ).filter((num): num is number => num !== null);
+  const isQuizComplete = unansweredQuestionNumbers.length === 0;
   const areAllPhotosReady = uploadedCount === 4;
 
   const missingAngles = HAIR_ANGLES.filter((angle) => !photos[angle.key]).map(
     (angle) => angle.shortLabel,
   );
+
+  const missingSummaryItems: string[] = [];
+  if (!isNameValid) {
+    missingSummaryItems.push('Nama Lengkap wajib diisi (minimal 2 karakter).');
+  }
+  if (!isWhatsappValid) {
+    missingSummaryItems.push('Nomor WhatsApp aktif wajib diisi (contoh: 0812-3456-7890).');
+  }
+  if (!isQuizComplete) {
+    missingSummaryItems.push(
+      `Pertanyaan Riwayat Kondisi Rambut nomor ${unansweredQuestionNumbers.join(', ')} wajib dipilih jawabannya.`,
+    );
+  }
+  if (!areAllPhotosReady) {
+    missingSummaryItems.push(
+      `Foto Rambut tampak ${missingAngles.join(', ')} wajib diunggah (harus lengkap 4 sudut).`,
+    );
+  }
 
   const handlePhotoChange = (angle: PhotoAngle, dataUrl: string) => {
     setSubmitError(null);
@@ -100,34 +121,43 @@ export function RegistrationForm({
     }));
   };
 
+  const scrollToFirstInvalidField = () => {
+    if (!isNameValid) {
+      const el = document.getElementById('candidate-fullname');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
+      return;
+    }
+    if (!isWhatsappValid) {
+      const el = document.getElementById('candidate-whatsapp');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
+      return;
+    }
+    if (!isQuizComplete) {
+      const firstMissingQuiz = HAIR_QUIZ_QUESTIONS.find((q) => !hairQuiz[q.key]);
+      if (firstMissingQuiz) {
+        const el = document.getElementById(`quiz-row-${firstMissingQuiz.key}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+    if (!areAllPhotosReady) {
+      const el = document.getElementById('photo-upload-section');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAttemptedSubmit(true);
     setSubmitError(null);
 
-    if (!isNameValid) {
-      setSubmitError('Mohon isi nama lengkap minimal 2 karakter.');
-      return;
-    }
-
-    if (!isWhatsappValid) {
+    if (!isNameValid || !isWhatsappValid || !isQuizComplete || !areAllPhotosReady) {
       setSubmitError(
-        'Mohon masukkan nomor WhatsApp Indonesia yang aktif (contoh: 081234567890).',
+        'Pendaftaran belum dapat dikirim. Mohon lengkapi seluruh data, pertanyaan, dan 4 foto yang bertanda wajib di bawah ini.',
       );
-      return;
-    }
-
-    if (!isQuizComplete) {
-      setSubmitError(
-        'Mohon jawab seluruh pertanyaan riwayat kondisi rambut terlebih dahulu.',
-      );
-      return;
-    }
-
-    if (!areAllPhotosReady) {
-      setSubmitError(
-        `Foto tampak ${missingAngles.join(', ')} belum diunggah. Lengkapi 4 sudut foto rambut terlebih dahulu.`,
-      );
+      scrollToFirstInvalidField();
       return;
     }
 
@@ -396,8 +426,11 @@ export function RegistrationForm({
                   return (
                     <div
                       key={item.key}
+                      id={`quiz-row-${item.key}`}
                       className={`py-3.5 first:pt-1 last:pb-1 transition-colors ${
-                        isMissing ? 'rounded-xl bg-red-50/55 px-3 -mx-1' : ''
+                        isMissing
+                          ? 'rounded-xl bg-red-50/75 border border-red-400 px-3 my-1.5'
+                          : ''
                       }`}
                     >
                       {/* Hanging indent: number column + text column so wrapped lines align with first letter */}
@@ -406,7 +439,7 @@ export function RegistrationForm({
                           {idx + 1}.
                         </span>
                         <p className="text-xs sm:text-sm font-semibold text-[#072218] leading-snug flex-1">
-                          {item.question}
+                          {item.question} <span className="text-emerald-700">*</span>
                         </p>
                       </div>
 
@@ -422,7 +455,9 @@ export function RegistrationForm({
                               className={`min-h-[42px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-center ${
                                 selected
                                   ? 'bg-emerald-700 text-white shadow-sm border border-emerald-800'
-                                  : 'bg-white/50 hover:bg-white/75 text-[#0f3023] border border-white/80'
+                                  : isMissing
+                                    ? 'bg-white/80 hover:bg-white text-red-900 border border-red-400'
+                                    : 'bg-white/50 hover:bg-white/75 text-[#0f3023] border border-white/80'
                               }`}
                             >
                               {opt}
@@ -430,6 +465,12 @@ export function RegistrationForm({
                           );
                         })}
                       </div>
+
+                      {isMissing && (
+                        <p className="mt-2 pl-6 text-xs font-semibold text-red-700" role="alert">
+                          Pertanyaan nomor {idx + 1} wajib dipilih salah satu jawabannya.
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -437,7 +478,7 @@ export function RegistrationForm({
             </div>
 
             {/* Section 3: 4-Angle Hair Photo Uploads */}
-            <div className="py-5 flex-1">
+            <div id="photo-upload-section" className="py-5 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div className="text-xs font-semibold text-emerald-900 tracking-wide">
                   03. Unggahan 4 Foto Rambut <span className="text-emerald-700">*</span>
@@ -459,6 +500,18 @@ export function RegistrationForm({
                 </p>
               </div>
 
+              {attemptedSubmit && !areAllPhotosReady && (
+                <div
+                  role="alert"
+                  className="mb-3.5 rounded-2xl bg-red-50/90 border border-red-400 px-3.5 py-2.5 flex items-start gap-2 text-red-900"
+                >
+                  <AlertCircle className="w-4 h-4 text-red-700 shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-xs font-semibold leading-relaxed">
+                    Wajib dilengkapi: Foto rambut tampak {missingAngles.join(', ')} belum diunggah. Semua 4 foto wajib diisi.
+                  </p>
+                </div>
+              )}
+
               {/* 2x2 Mobile-First Grid for the 4 Angles */}
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 {HAIR_ANGLES.map((angle) => (
@@ -476,13 +529,25 @@ export function RegistrationForm({
             </div>
 
             {/* Validation / Network Error Feedback */}
-            {submitError && (
+            {(submitError || (attemptedSubmit && missingSummaryItems.length > 0)) && (
               <div
                 role="alert"
-                className="mb-4 rounded-2xl bg-red-50/90 border border-red-400 px-4 py-3 flex items-start gap-2.5 text-red-900"
+                className="mb-4 rounded-2xl bg-red-50/95 border border-red-400 px-4 py-3.5 flex items-start gap-2.5 text-red-900 shadow-xs"
               >
                 <AlertCircle className="w-4 h-4 text-red-700 shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-xs sm:text-sm font-semibold leading-relaxed">{submitError}</p>
+                <div className="space-y-1.5 text-xs sm:text-sm">
+                  <p className="font-semibold leading-relaxed">
+                    {submitError ||
+                      'Pendaftaran belum dapat dikirim. Mohon lengkapi seluruh data berikut:'}
+                  </p>
+                  {attemptedSubmit && missingSummaryItems.length > 0 && (
+                    <ul className="list-disc pl-4 space-y-1 text-xs font-medium text-red-800">
+                      {missingSummaryItems.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
 

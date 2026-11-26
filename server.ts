@@ -571,46 +571,78 @@ async function startServer(): Promise<void> {
       const hairNote =
         typeof body.hairNote === 'string' ? body.hairNote.trim().slice(0, 500) : '';
 
-      let hairQuiz: HairQuizAnswers | undefined;
-      if (body.hairQuiz && typeof body.hairQuiz === 'object') {
-        hairQuiz = {
-          coloredLast4Years:
-            typeof body.hairQuiz.coloredLast4Years === 'string'
-              ? body.hairQuiz.coloredLast4Years.trim()
-              : '',
-          smoothedLast4Years:
-            typeof body.hairQuiz.smoothedLast4Years === 'string'
-              ? body.hairQuiz.smoothedLast4Years.trim()
-              : '',
-          antiDandruffShampoo:
-            typeof body.hairQuiz.antiDandruffShampoo === 'string'
-              ? body.hairQuiz.antiDandruffShampoo.trim()
-              : '',
-          blackShampoo:
-            typeof body.hairQuiz.blackShampoo === 'string'
-              ? body.hairQuiz.blackShampoo.trim()
-              : '',
-          keratinLast4Years:
-            typeof body.hairQuiz.keratinLast4Years === 'string'
-              ? body.hairQuiz.keratinLast4Years.trim()
-              : '',
-        };
-      }
-
-      if (!body.photos || typeof body.photos !== 'object') {
+      if (!body.hairQuiz || typeof body.hairQuiz !== 'object') {
         res.status(400).json({
-          error: 'Semua 4 foto rambut (depan, belakang, kanan, kiri) wajib diunggah.',
+          error: 'Seluruh 5 pertanyaan riwayat kondisi rambut wajib dijawab.',
         });
         return;
       }
 
-      for (const angle of REQUIRED_ANGLES) {
-        if (typeof body.photos[angle] !== 'string' || !body.photos[angle]) {
-          res.status(400).json({
-            error: `Foto tampak ${angle} belum diunggah. Pastikan 4 sudut rambut lengkap.`,
-          });
-          return;
-        }
+      const hairQuiz: HairQuizAnswers = {
+        coloredLast4Years:
+          typeof body.hairQuiz.coloredLast4Years === 'string'
+            ? body.hairQuiz.coloredLast4Years.trim()
+            : '',
+        smoothedLast4Years:
+          typeof body.hairQuiz.smoothedLast4Years === 'string'
+            ? body.hairQuiz.smoothedLast4Years.trim()
+            : '',
+        antiDandruffShampoo:
+          typeof body.hairQuiz.antiDandruffShampoo === 'string'
+            ? body.hairQuiz.antiDandruffShampoo.trim()
+            : '',
+        blackShampoo:
+          typeof body.hairQuiz.blackShampoo === 'string'
+            ? body.hairQuiz.blackShampoo.trim()
+            : '',
+        keratinLast4Years:
+          typeof body.hairQuiz.keratinLast4Years === 'string'
+            ? body.hairQuiz.keratinLast4Years.trim()
+            : '',
+      };
+
+      const requiredQuizKeys: Array<{ key: keyof HairQuizAnswers; label: string }> = [
+        { key: 'coloredLast4Years', label: 'Pertanyaan 1 (Riwayat Semir/Pewarnaan)' },
+        { key: 'smoothedLast4Years', label: 'Pertanyaan 2 (Riwayat Smoothing)' },
+        { key: 'antiDandruffShampoo', label: 'Pertanyaan 3 (Shampoo Anti-Ketombe)' },
+        { key: 'blackShampoo', label: 'Pertanyaan 4 (Shampoo Hitam)' },
+        { key: 'keratinLast4Years', label: 'Pertanyaan 5 (Treatment Keratin)' },
+      ];
+
+      const missingQuizLabels = requiredQuizKeys
+        .filter((item) => !hairQuiz[item.key])
+        .map((item) => item.label);
+
+      if (missingQuizLabels.length > 0) {
+        res.status(400).json({
+          error: `Pertanyaan berikut wajib dijawab: ${missingQuizLabels.join(', ')}.`,
+        });
+        return;
+      }
+
+      if (!body.photos || typeof body.photos !== 'object') {
+        res.status(400).json({
+          error: 'Semua 4 foto rambut (Depan, Belakang, Kanan, Kiri) wajib diunggah.',
+        });
+        return;
+      }
+
+      const angleLabels: Record<PhotoAngle, string> = {
+        front: 'Depan',
+        back: 'Belakang',
+        right: 'Kanan',
+        left: 'Kiri',
+      };
+
+      const missingPhotoLabels = REQUIRED_ANGLES.filter(
+        (angle) => typeof body.photos?.[angle] !== 'string' || !body.photos?.[angle],
+      ).map((angle) => angleLabels[angle]);
+
+      if (missingPhotoLabels.length > 0) {
+        res.status(400).json({
+          error: `Foto rambut tampak ${missingPhotoLabels.join(', ')} wajib diunggah. Pastikan 4 sudut rambut lengkap.`,
+        });
+        return;
       }
 
       const id = `cand-${crypto.randomUUID().slice(0, 12)}`;
